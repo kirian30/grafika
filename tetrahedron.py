@@ -14,10 +14,6 @@ vertices = [
     [0, 0, -sqrt(6)/3]
 ]
 
-surfaces = [
-
-]
-
 mesh = [
     [0, 1, 2, 3, 0, 1]
 ]
@@ -38,24 +34,35 @@ def renderTetrahedron():
             glVertex3fv(vertices[vertex_index])
         glEnd()
 
-
+#dzielenie jednego czworościanu na 4 mniejsze
 def generateTetrahedronMesh(n):
-    if n > 1:
-        mesh.clear()
-        number_of_tetrahedron_vertices = 4
+    if n == 1:
+        return
 
-        #tworzenie listy wierzchołków po 4 wierzcholki dla kazdego nowego czworoscianu
-        base_vertices = vertices.copy()
-
-        for i in range(0, number_of_tetrahedron_vertices):
-            for j in range(0, number_of_tetrahedron_vertices):
+    generateTetrahedronMesh(n - 1)
+    mesh.clear()
+    number_of_tetrahedron_vertices = 4
+    base_vertices = vertices.copy()
+    max_first_vertex = 4 ** (n-1)
+    k = 0
+    # tworzenie listy wierzchołków po 4 wierzcholki dla kazdego nowego czworoscianu
+    for first_vertex in range(0, max_first_vertex, 4):
+        for i in range(number_of_tetrahedron_vertices):
+            for j in range(number_of_tetrahedron_vertices):
                 if i != j:
-                    new_vertex = [(base_vertices[i][0]+base_vertices[j][0])/2, (base_vertices[i][1]+base_vertices[j][1])/2, (base_vertices[i][2]+base_vertices[j][2])/2]
-                    vertices.insert(4*i + j, new_vertex)
+                    new_vertex = [(base_vertices[i + first_vertex][0] + base_vertices[j + first_vertex][0]) / 2,
+                                  (base_vertices[i + first_vertex][1] + base_vertices[j + first_vertex][1]) / 2,
+                                  (base_vertices[i + first_vertex][2] + base_vertices[j + first_vertex][2]) / 2]
+                    vertices.insert(4 * i + j + 4 * first_vertex, new_vertex)
+                    x = i + first_vertex
+                    y = j + first_vertex
 
-        #tworzenie siatek tych czworoscianow
-        for i in range(0, 4):
-            mesh.append([4*i, 4*i + 1, 4*i + 2, 4*i + 3, 4*i, 4*i + 1])
+                    print(str(k) + ": " + str(x) + " " + str(y) + "pozycja: " + str(4 * i + j + first_vertex))
+                    k = k+1
+
+    # tworzenie siatek tych czworoscianow
+    for i in range(0, max_first_vertex):
+        mesh.append([4 * i, 4 * i + 1, 4 * i + 2, 4 * i + 3, 4 * i, 4 * i + 1])
 
 
 def light():
@@ -85,7 +92,7 @@ def main():
     #glEnable(GL_COLOR_MATERIAL)
 
     glEnable(GL_DEPTH_TEST)
-    generateTetrahedronMesh(2)
+    generateTetrahedronMesh(3)
 
     while True:
         for event in pygame.event.get():

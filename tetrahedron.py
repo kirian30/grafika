@@ -1,5 +1,3 @@
-import itertools
-
 import pygame
 from pygame.locals import *
 from math import sqrt
@@ -34,7 +32,7 @@ def renderTetrahedron():
             glVertex3fv(vertices[vertex_index])
         glEnd()
 
-#dzielenie jednego czworościanu na 4 mniejsze
+
 def generateTetrahedronMesh(n):
     if n == 1:
         return
@@ -44,7 +42,7 @@ def generateTetrahedronMesh(n):
     number_of_tetrahedron_vertices = 4
     base_vertices = vertices.copy()
     max_first_vertex = 4 ** (n-1)
-    k = 0
+
     # tworzenie listy wierzchołków po 4 wierzcholki dla kazdego nowego czworoscianu
     for first_vertex in range(0, max_first_vertex, 4):
         for i in range(number_of_tetrahedron_vertices):
@@ -54,11 +52,6 @@ def generateTetrahedronMesh(n):
                                   (base_vertices[i + first_vertex][1] + base_vertices[j + first_vertex][1]) / 2,
                                   (base_vertices[i + first_vertex][2] + base_vertices[j + first_vertex][2]) / 2]
                     vertices.insert(4 * i + j + 4 * first_vertex, new_vertex)
-                    x = i + first_vertex
-                    y = j + first_vertex
-
-                    print(str(k) + ": " + str(x) + " " + str(y) + "pozycja: " + str(4 * i + j + first_vertex))
-                    k = k+1
 
     # tworzenie siatek tych czworoscianow
     for i in range(0, max_first_vertex):
@@ -79,13 +72,22 @@ def light():
     glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE)
 
 
+def camera_view(fovy, eye_x, eye_y, center_x, center_y):
+    display = (1000, 1000)
+    glMatrixMode(GL_PROJECTION)
+    glLoadIdentity()
+    gluPerspective(fovy, (display[0] / display[1]), 0.1, 50)
+    gluLookAt(
+        eye_x, eye_y, -2,  # położenie kamery
+        center_x, center_y, 0,  # punkt, na który patrzy kamera
+        0, 1, 0  # wektor wskazujący gdzie jest góra kamery
+    )
+
+
 def main():
     pygame.init()
-    display = (800,800)
+    display = (1000, 1000)
     pygame.display.set_mode(display, DOUBLEBUF|OPENGL)
-
-    #glTranslatef(0.0, 0.0, -5)
-
 
     #glEnable(GL_LIGHTING)
     #glEnable(GL_LIGHT0)
@@ -94,36 +96,74 @@ def main():
     glEnable(GL_DEPTH_TEST)
     generateTetrahedronMesh(3)
 
+    fovy = 45
+    eye_x = 0
+    eye_y = -1
+    center_x = 0
+    center_y = 0
+    last_pressed_key = pygame.K_SPACE
+
     while True:
+        camera_view(fovy, eye_x, eye_y, center_x, center_y)
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 quit()
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_z:
+                    last_pressed_key = pygame.K_z
+                    fovy -= 2
 
-            #if event.type == pygame.KEYDOWN:
-             #   if event.key == pygame.K_UP:
-               #     glTranslatef(0.5,0,0)
+                elif event.key == pygame.K_x:
+                    last_pressed_key = pygame.K_x
+                    fovy += 2
 
-              #  if event.key == pygame.K_DOWN:
-               #     glTranslatef(-0.5,0,0)
+                elif event.key == pygame.K_k:
+                    last_pressed_key = pygame.K_k
 
-        glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT)
+                #zmiana pozycji kamery
+                if last_pressed_key == pygame.K_k:
+                    if event.key == pygame.K_LEFT:
+                        last_pressed_key = pygame.K_LEFT
+                        eye_x += 0.2
 
-        # kamera
-        glMatrixMode(GL_PROJECTION)
-        glLoadIdentity()
-        gluPerspective(45, (display[0] / display[1]), 0.1, 50)
-        gluLookAt(
-            0, -1, -2,   # położenie kamery
-            0, 0, 0,       # punkt, na który patrzy kamera
-            0, 1, 0        # wektor wskazujący gdzie jest góra kamery
-        )
+                    elif event.key == pygame.K_RIGHT:
+                        last_pressed_key = pygame.K_RIGHT
+                        eye_x -= 0.2
+
+                    elif event.key == pygame.K_UP:
+                        last_pressed_key = pygame.K_UP
+                        eye_y += 0.2
+
+                    elif event.key == pygame.K_DOWN:
+                        last_pressed_key = pygame.K_DOWN
+                        eye_y -= 0.2
+
+                #zmiana punktu, na który patrzy kamera
+                elif event.key == pygame.K_LEFT:
+                    last_pressed_key = pygame.K_LEFT
+                    center_x -= 0.2
+
+                elif event.key == pygame.K_RIGHT:
+                    last_pressed_key = pygame.K_RIGHT
+                    center_x += 0.2
+
+                elif event.key == pygame.K_UP:
+                    last_pressed_key = pygame.K_UP
+                    center_y -= 0.2
+
+                elif event.key == pygame.K_DOWN:
+                    last_pressed_key = pygame.K_DOWN
+                    center_y += 0.2
+
+            camera_view(fovy, eye_x, eye_y, center_x, center_y)
 
         # obiekt
         glMatrixMode(GL_MODELVIEW)
         glRotatef(1, 0, 0, 1)       # obrót o 1 stopień względem wektora [0, 0, 1]
 
-        #triangl()
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
         renderTetrahedron()
         #light()
         pygame.display.flip()

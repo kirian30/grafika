@@ -34,6 +34,17 @@ def render_tetrahedron():
         for i in range(0, len(surface)):
             vertex_index = surface[i]
             glColor3fv(colors[vertex_index % 4])
+
+            # Obliczenie wektorów normalnych
+            v0 = vertices[surface[i]]
+            v1 = vertices[surface[i - 1]]
+            v2 = vertices[surface[i - 2]]
+            normal = (
+                (v1[1] - v0[1]) * (v2[2] - v0[2]) - (v1[2] - v0[2]) * (v2[1] - v0[1]),
+                (v1[2] - v0[2]) * (v2[0] - v0[0]) - (v1[0] - v0[0]) * (v2[2] - v0[2]),
+                (v1[0] - v0[0]) * (v2[1] - v0[1]) - (v1[1] - v0[1]) * (v2[0] - v0[0])
+            )
+            glNormal3fv(normal)
             glTexCoord2f(vertices[vertex_index][0], vertices[vertex_index][1])
             glVertex3fv(vertices[vertex_index])
         glEnd()
@@ -65,17 +76,26 @@ def generate_tetrahedron_mesh(n):
 
 
 def light():
-    glLight(GL_LIGHT0, GL_POSITION,  (5, 5, 5, 0)) # źródło światła left, top, front
+    # Materiał obiektu
+    for i, surface in enumerate(mesh):
+        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, colors[i % 4] + [1])
+        glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, colors[i % 4] + [1])
+        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
+        glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, 30.0)
 
-    # Ustawienie koloru światła otoczenia
+    # Światło punktowe
+    glLight(GL_LIGHT0, GL_POSITION, (5, 5, 5, 0))  # źródło światła punktowego
+    glLightf(GL_LIGHT0, GL_SPOT_CUTOFF, 180.0)
     glLightfv(GL_LIGHT0, GL_AMBIENT, (1.0, 0.0, 0.0, 1.0))
-
-    # Ustawienie koloru światła rozproszonego
     glLightfv(GL_LIGHT0, GL_DIFFUSE, (0.0, 0.0, 1.0, 1.0))
-
-    # Ustawienie koloru światła wypukłego
     glLightfv(GL_LIGHT0, GL_SPECULAR, (0.0, 1.0, 0.0, 1.0))
-    glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE)
+
+    # Światło kierunkowe
+    glLight(GL_LIGHT1, GL_POSITION, (1.0, 0.0, 0.0, 0.0))  # źródło światła kierunkowego
+    glLightfv(GL_LIGHT1, GL_DIFFUSE, (1.0, 1.0, 1.0, 1.0))
+    glLightfv(GL_LIGHT1, GL_SPECULAR, (1.0, 1.0, 1.0, 1.0))
+    glEnable(GL_LIGHT1)
+    # glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE)
 
 
 def camera_view(fovy, eye_x, eye_y, center_x, center_y):
@@ -92,7 +112,6 @@ def camera_view(fovy, eye_x, eye_y, center_x, center_y):
 
 def texture():
     glEnable(GL_TEXTURE_2D)
-    #glEnable(GL_CULL_FACE)
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
@@ -110,11 +129,13 @@ def main():
     display = (1000, 1000)
     pygame.display.set_mode(display, DOUBLEBUF|OPENGL)
 
-    #glEnable(GL_LIGHTING)
-    #glEnable(GL_LIGHT0)
-    #glEnable(GL_COLOR_MATERIAL)
+    glEnable(GL_LIGHTING)
+    glEnable(GL_LIGHT0)
+    glEnable(GL_LIGHT1)
+    glEnable(GL_COLOR_MATERIAL)
 
     glEnable(GL_DEPTH_TEST)
+    glShadeModel(GL_SMOOTH)  # właczna gładkie cieniowanie
     texture()
     generate_tetrahedron_mesh(3)
 
@@ -182,13 +203,15 @@ def main():
 
             camera_view(fovy, eye_x, eye_y, center_x, center_y)
 
+        light()
+
         # obiekt
         glMatrixMode(GL_MODELVIEW)
         glRotatef(1, 0, 0, 1)       # obrót o 1 stopień względem wektora [0, 0, 1]
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
+
         render_tetrahedron()
-        #light()
         pygame.display.flip()
         pygame.time.wait(10)
 

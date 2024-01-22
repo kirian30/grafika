@@ -8,6 +8,7 @@ Działanie klawiszy klawiatury:
 "X" - oddalanie obrazu
 
 Poruszać widokiem/kamerą można za pomocą strzałek klawiatury (lewo-prawo, góra-dół)
+
 *po naciśnięciu "W" strzałki będą zmieniały położenie widoku (punkt, na któy patrzy kamera)
 *po naciśnięciu "K" strzałki zmieniają położenie kamery
 

@@ -28,23 +28,27 @@ use_texture = False
 
 
 def render_tetrahedron():
+    glBegin(GL_POINTS)
+    glVertex3fv([0, 0, 0])
+    glEnd()
+
     glEnable(GL_TEXTURE_2D) if use_texture else glDisable(GL_TEXTURE_2D)
     for surface in mesh:
         glBegin(GL_TRIANGLE_STRIP)
         for i in range(0, len(surface)):
             vertex_index = surface[i]
             glColor3fv(colors[vertex_index % 4])
-
             # Obliczenie wektorów normalnych
             v0 = vertices[surface[i]]
             v1 = vertices[surface[i - 1]]
             v2 = vertices[surface[i - 2]]
             normal = (
-                (v1[1] - v0[1]) * (v2[2] - v0[2]) - (v1[2] - v0[2]) * (v2[1] - v0[1]),
-                (v1[2] - v0[2]) * (v2[0] - v0[0]) - (v1[0] - v0[0]) * (v2[2] - v0[2]),
-                (v1[0] - v0[0]) * (v2[1] - v0[1]) - (v1[1] - v0[1]) * (v2[0] - v0[0])
+                ((v1[1] - v0[1]) * (v2[2] - v0[2]) - (v1[2] - v0[2]) * (v2[1] - v0[1])),
+                ((v1[2] - v0[2]) * (v2[0] - v0[0]) - (v1[0] - v0[0]) * (v2[2] - v0[2])),
+                ((v1[0] - v0[0]) * (v2[1] - v0[1]) - (v1[1] - v0[1]) * (v2[0] - v0[0]))
             )
             glNormal3fv(normal)
+
             glTexCoord2f(vertices[vertex_index][0], vertices[vertex_index][1])
             glVertex3fv(vertices[vertex_index])
         glEnd()
@@ -77,25 +81,23 @@ def generate_tetrahedron_mesh(n):
 
 def light():
     # Materiał obiektu
-    for i, surface in enumerate(mesh):
-        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, colors[i % 4] + [1])
-        glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, colors[i % 4] + [1])
-        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, [1.0, 1.0, 1.0, 1.0])
-        glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, 30.0)
 
     # Światło punktowe
-    glLight(GL_LIGHT0, GL_POSITION, (5, 5, 5, 0))  # źródło światła punktowego
-    glLightf(GL_LIGHT0, GL_SPOT_CUTOFF, 180.0)
-    glLightfv(GL_LIGHT0, GL_AMBIENT, (1.0, 0.0, 0.0, 1.0))
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, (0.0, 0.0, 1.0, 1.0))
-    glLightfv(GL_LIGHT0, GL_SPECULAR, (0.0, 1.0, 0.0, 1.0))
+    glLight(GL_LIGHT0, GL_POSITION, (0, 0, 1, 1))  # źródło światła punktowego
+    glLightfv(GL_LIGHT0, GL_AMBIENT, (0.1, 0.0, 0.0, 1.0))
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, (0.6, 0.0, 0.0, 1.0))
+    glLightfv(GL_LIGHT0, GL_SPECULAR, (1.0, 1.0, 1.0, 1.0))
+    glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0)
+    glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.05)
+    glLightf(GL_LIGHT0, GL_QUADRATIC_ATTENUATION, 0.01)
 
     # Światło kierunkowe
-    glLight(GL_LIGHT1, GL_POSITION, (1.0, 0.0, 0.0, 0.0))  # źródło światła kierunkowego
-    glLightfv(GL_LIGHT1, GL_DIFFUSE, (1.0, 1.0, 1.0, 1.0))
-    glLightfv(GL_LIGHT1, GL_SPECULAR, (1.0, 1.0, 1.0, 1.0))
+    glLight(GL_LIGHT1, GL_POSITION, (0, 0, 100, 0.0))  # źródło światła kierunkowego
+    glLightfv(GL_LIGHT1, GL_AMBIENT, (0.01, 0.01, 0.01, 0))
+    glLightfv(GL_LIGHT1, GL_DIFFUSE, (1.0, 1.0, 1.0, 0))
+    glLightfv(GL_LIGHT1, GL_SPECULAR, (1.0, 1.0, 1.0, 0))
     glEnable(GL_LIGHT1)
-    # glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE)
+    #glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE)
 
 
 def camera_view(fovy, eye_x, eye_y, center_x, center_y):
@@ -130,14 +132,14 @@ def main():
     pygame.display.set_mode(display, DOUBLEBUF|OPENGL)
 
     glEnable(GL_LIGHTING)
-    glEnable(GL_LIGHT0)
-    glEnable(GL_LIGHT1)
     glEnable(GL_COLOR_MATERIAL)
 
     glEnable(GL_DEPTH_TEST)
     glShadeModel(GL_SMOOTH)  # właczna gładkie cieniowanie
     texture()
     generate_tetrahedron_mesh(3)
+
+    light()
 
     fovy = 45
     eye_x = 0
@@ -146,6 +148,8 @@ def main():
     center_y = 0
     k_pressed = False
     w_pressed = False
+    directional_light_use = False
+    spot_ligh_use = False
 
     while True:
         camera_view(fovy, eye_x, eye_y, center_x, center_y)
@@ -172,6 +176,11 @@ def main():
                 elif event.key == pygame.K_t:
                     global use_texture
                     use_texture = not use_texture  # Zmiana stanu tekstury
+
+                elif event.key == pygame.K_d:
+                    directional_light_use = not directional_light_use
+                elif event.key == pygame.K_s:
+                    spot_ligh_use = not spot_ligh_use
 
                 #zmiana pozycji kamery
                 if k_pressed:
@@ -203,7 +212,13 @@ def main():
 
             camera_view(fovy, eye_x, eye_y, center_x, center_y)
 
-        light()
+        if spot_ligh_use:
+            glEnable(GL_LIGHT0)
+        else: glDisable(GL_LIGHT0)
+
+        if directional_light_use:
+            glEnable(GL_LIGHT1)
+        else: glDisable(GL_LIGHT1)
 
         # obiekt
         glMatrixMode(GL_MODELVIEW)

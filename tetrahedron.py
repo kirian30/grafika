@@ -28,10 +28,6 @@ use_texture = False
 
 
 def render_tetrahedron():
-    glBegin(GL_POINTS)
-    glVertex3fv([0, 0, 0])
-    glEnd()
-
     glEnable(GL_TEXTURE_2D) if use_texture else glDisable(GL_TEXTURE_2D)
     for surface in mesh:
         glBegin(GL_TRIANGLE_STRIP)

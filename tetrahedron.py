@@ -4,6 +4,7 @@ from math import sqrt
 
 from OpenGL.GL import *
 from OpenGL.GLU import *
+from PIL import Image
 
 vertices = [
     [-0.5, -sqrt(3)/6, 0],
@@ -23,21 +24,26 @@ colors = [
     [1, 1, 1]
 ]
 
-def renderTetrahedron():
+use_texture = False
+
+
+def render_tetrahedron():
+    glEnable(GL_TEXTURE_2D) if use_texture else glDisable(GL_TEXTURE_2D)
     for surface in mesh:
         glBegin(GL_TRIANGLE_STRIP)
         for i in range(0, len(surface)):
             vertex_index = surface[i]
-            glColor3fv(colors[vertex_index%4])
+            glColor3fv(colors[vertex_index % 4])
+            glTexCoord2f(vertices[vertex_index][0], vertices[vertex_index][1])
             glVertex3fv(vertices[vertex_index])
         glEnd()
 
 
-def generateTetrahedronMesh(n):
+def generate_tetrahedron_mesh(n):
     if n == 1:
         return
 
-    generateTetrahedronMesh(n - 1)
+    generate_tetrahedron_mesh(n - 1)
     mesh.clear()
     number_of_tetrahedron_vertices = 4
     base_vertices = vertices.copy()
@@ -84,6 +90,21 @@ def camera_view(fovy, eye_x, eye_y, center_x, center_y):
     )
 
 
+def texture():
+    glEnable(GL_TEXTURE_2D)
+    #glEnable(GL_CULL_FACE)
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
+
+    image = Image.open("D1_t.tga")
+
+    glTexImage2D(
+        GL_TEXTURE_2D, 0, 3, image.size[0], image.size[1], 0, GL_RGB, GL_UNSIGNED_BYTE,
+        image.tobytes("raw", "RGB", 0, -1)
+    )
+
+
 def main():
     pygame.init()
     display = (1000, 1000)
@@ -94,14 +115,16 @@ def main():
     #glEnable(GL_COLOR_MATERIAL)
 
     glEnable(GL_DEPTH_TEST)
-    generateTetrahedronMesh(3)
+    texture()
+    generate_tetrahedron_mesh(3)
 
     fovy = 45
     eye_x = 0
     eye_y = -1
     center_x = 0
     center_y = 0
-    last_pressed_key = pygame.K_SPACE
+    k_pressed = False
+    w_pressed = False
 
     while True:
         camera_view(fovy, eye_x, eye_y, center_x, center_y)
@@ -112,50 +135,50 @@ def main():
                 quit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_z:
-                    last_pressed_key = pygame.K_z
                     fovy -= 2
 
                 elif event.key == pygame.K_x:
-                    last_pressed_key = pygame.K_x
                     fovy += 2
 
                 elif event.key == pygame.K_k:
-                    last_pressed_key = pygame.K_k
+                    k_pressed = True
+                    w_pressed = False
+
+                elif event.key == pygame.K_w:
+                    w_pressed = True
+                    k_pressed = False
+
+                elif event.key == pygame.K_t:
+                    global use_texture
+                    use_texture = not use_texture  # Zmiana stanu tekstury
 
                 #zmiana pozycji kamery
-                if last_pressed_key == pygame.K_k:
+                if k_pressed:
                     if event.key == pygame.K_LEFT:
-                        last_pressed_key = pygame.K_LEFT
                         eye_x += 0.2
 
                     elif event.key == pygame.K_RIGHT:
-                        last_pressed_key = pygame.K_RIGHT
                         eye_x -= 0.2
 
                     elif event.key == pygame.K_UP:
-                        last_pressed_key = pygame.K_UP
                         eye_y += 0.2
 
                     elif event.key == pygame.K_DOWN:
-                        last_pressed_key = pygame.K_DOWN
                         eye_y -= 0.2
 
-                #zmiana punktu, na który patrzy kamera
-                elif event.key == pygame.K_LEFT:
-                    last_pressed_key = pygame.K_LEFT
-                    center_x -= 0.2
+                #zmiana pozycji widoku
+                if w_pressed:
+                    if event.key == pygame.K_LEFT:
+                        center_x -= 0.2
 
-                elif event.key == pygame.K_RIGHT:
-                    last_pressed_key = pygame.K_RIGHT
-                    center_x += 0.2
+                    elif event.key == pygame.K_RIGHT:
+                        center_x += 0.2
 
-                elif event.key == pygame.K_UP:
-                    last_pressed_key = pygame.K_UP
-                    center_y -= 0.2
+                    elif event.key == pygame.K_UP:
+                        center_y -= 0.2
 
-                elif event.key == pygame.K_DOWN:
-                    last_pressed_key = pygame.K_DOWN
-                    center_y += 0.2
+                    elif event.key == pygame.K_DOWN:
+                        center_y += 0.2
 
             camera_view(fovy, eye_x, eye_y, center_x, center_y)
 
@@ -164,7 +187,7 @@ def main():
         glRotatef(1, 0, 0, 1)       # obrót o 1 stopień względem wektora [0, 0, 1]
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
-        renderTetrahedron()
+        render_tetrahedron()
         #light()
         pygame.display.flip()
         pygame.time.wait(10)

@@ -58,7 +58,7 @@ def generate_tetrahedron_mesh(n):
     mesh.clear()
     number_of_tetrahedron_vertices = 4
     base_vertices = vertices.copy()
-    max_first_vertex = 4 ** (n-1)
+    max_first_vertex = 4 ** (n-1)  #potęgowanie
 
     # tworzenie listy wierzchołków po 4 wierzcholki dla kazdego nowego czworoscianu
     for first_vertex in range(0, max_first_vertex, 4):
@@ -127,15 +127,15 @@ def main():
     display = (1000, 1000)
     pygame.display.set_mode(display, DOUBLEBUF|OPENGL)
 
-    glEnable(GL_LIGHTING)
+    #glEnable(GL_LIGHTING)
     glEnable(GL_COLOR_MATERIAL)
 
     glEnable(GL_DEPTH_TEST)
     glShadeModel(GL_SMOOTH)  # właczna gładkie cieniowanie
     texture()
-    generate_tetrahedron_mesh(3)
+    generate_tetrahedron_mesh(4)
 
-    light()
+    #light()
 
     fovy = 45
     eye_x = 0
